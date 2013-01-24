@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"encoding/xml"
 )
 
 var minMoisture = 0.5
@@ -24,6 +25,7 @@ var rain = false
 
 //Web server:
 func handle(w http.ResponseWriter, r *http.Request) {
+	willRain()
 	fmt.Println(r)
 	r.ParseForm()
 	fmt.Println(r.Form["moisture"])
@@ -63,8 +65,27 @@ func getMoisture() float64 {
 
 }
 
-//func willRain() bool {
-//}
+type Precipitation struct {
+	Value float64 `xml:"value,attr"`
+}
+
+type WeatherData struct {
+	Precipitations []Precipitation `xml:"forecast>tabular>time>precipitation"`
+}
+
+func willRain() float64 {
+	client := new(http.Client)
+	resp, err := client.Get("http://www.yr.no/stad/Andorra/Encamp/Vila/varsel.xml")
+	if err != nil {
+		panic(err)
+	}
+	var weatherData WeatherData
+	if err := xml.NewDecoder(resp.Body).Decode(&weatherData); err != nil {
+		panic(err)
+	}
+	fmt.Println(weatherData)
+	return 0
+}
 
 func runPump() {
 	fmt.Println("Pump is running")
@@ -75,7 +96,7 @@ func checkLoop() {
 	for {
 		var watering bool
 		moisture := getMoisture()
-		//rain := willRain()
+		
 		if (moisture < minMoisture) && !(rain) {
 			watering = true
 		} else {
