@@ -23,9 +23,14 @@ import (
 var minMoisture = 0.5
 var rain = false
 
+
 //Web server:
 func handle(w http.ResponseWriter, r *http.Request) {
-	willRain()
+	rainTotal := willRain()
+	if rainTotal>0 {
+		rain = true
+		fmt.Println("rain is true")
+	}
 	fmt.Println(r)
 	r.ParseForm()
 	fmt.Println(r.Form["moisture"])
@@ -38,24 +43,14 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if len(r.Form["rain"]) > 0 {
-		rain = r.Form["rain"][0] == "1"
-		
-
-	}
-
 	fmt.Fprintln(w, "<form>")
 	fmt.Fprintln(w, "Input lowest acceptable soil moisture level: <br/>")
 	fmt.Fprintf(w, "moisture: <input type='text' name='moisture' value='%v'> <br/>", minMoisture)
-	fmt.Fprintln(w, "Will it rain at any time during the next 24 hours?: <br/>")
-	if rain {
-		fmt.Fprintln(w, "<input type='radio' checked='checked' name='rain' value=1> Yes <br/>")
-		fmt.Fprintln(w, "<input type='radio' name='rain' value=0> No")
-	} else {
-		fmt.Fprintln(w, "<input type='radio' name='rain' value=1> Yes <br/>")
-		fmt.Fprintln(w, "<input type='radio' checked='checked' name='rain' value=0> No")
-	}
-	fmt.Fprintln(w, "<input type='submit' value='Submit'>")
+	fmt.Fprintln(w, "Total rain during the next 24 hours: ")
+	fmt.Fprintln(w, rainTotal)
+	fmt.Fprintln(w, " mm </br>" )
+	//put in override "water anyway? buttons: today always no"
+	//insert minimum mm of rain per 24 h for delayed watering
 	fmt.Fprintln(w, "</form>")
 }
 
@@ -97,7 +92,7 @@ func willRain() float64 {
 		fmt.Println(rainTotal)
 	}
 	//fmt.Println(weatherData)
-	return 0
+	return rainTotal
 }
 
 func runPump() {
