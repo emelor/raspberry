@@ -65,12 +65,17 @@ func getMoisture() float64 {
 
 }
 
+type Time struct {
+	From string `xml:"from,attr"`
+	To string `xml:"to,attr"`
+	Precip Precipitation `xml:"precipitation"`
+}
 type Precipitation struct {
 	Value float64 `xml:"value,attr"`
 }
 
 type WeatherData struct {
-	Precipitations []Precipitation `xml:"forecast>tabular>time>precipitation"`
+	Times []Time `xml:"forecast>tabular>time"`
 }
 
 func willRain() float64 {
@@ -83,7 +88,15 @@ func willRain() float64 {
 	if err := xml.NewDecoder(resp.Body).Decode(&weatherData); err != nil {
 		panic(err)
 	}
-	fmt.Println(weatherData)
+	var rainTotal = 0.0
+	for i:=0; i<8; i++ {
+		rainMm := weatherData.Times[i].Precip.Value
+		rainTotal = rainTotal + rainMm
+		fmt.Println(rainMm)
+		fmt.Println("Rain total: ")
+		fmt.Println(rainTotal)
+	}
+	//fmt.Println(weatherData)
 	return 0
 }
 
