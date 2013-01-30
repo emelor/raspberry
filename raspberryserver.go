@@ -22,12 +22,14 @@ import (
 
 var minMoisture = 0.5
 var rain = false
+var rainStruct = &rainCheck{}
+var weatherUrl = "http://www.yr.no/stad/Sverige/Stockholm/Stockholm/varsel.xml"
 
 
 //Web server:
 func handle(w http.ResponseWriter, r *http.Request) {
-	rainTotal := willRain()
-	if rainTotal>0 {
+	rainStruct.willRain()
+	if rainStruct.rainTotal>0 {
 		rain = true
 		fmt.Println("rain is true")
 	}
@@ -47,7 +49,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Input lowest acceptable soil moisture level: <br/>")
 	fmt.Fprintf(w, "moisture: <input type='text' name='moisture' value='%v'> <br/>", minMoisture)
 	fmt.Fprintln(w, "Total rain during the next 24 hours: ")
-	fmt.Fprintln(w, rainTotal)
+	fmt.Fprintln(w, rainStruct.rainTotal)
 	fmt.Fprintln(w, " mm </br>" )
 	//put in override "water anyway? buttons: today always no"
 	//insert minimum mm of rain per 24 h for delayed watering
@@ -58,6 +60,11 @@ func getMoisture() float64 {
 	moisture := rand.Float64()
 	return moisture
 
+}
+
+type rainCheck struct {
+	previousTime time.Time 
+	rainTotal float64
 }
 
 type Time struct {
@@ -73,9 +80,12 @@ type WeatherData struct {
 	Times []Time `xml:"forecast>tabular>time"`
 }
 
-func willRain() float64 {
+func (self *rainCheck) willRain() {
+	if time.Now().Sub(self.previousTime)<time.Hour{
+		fmt.Println("willRain func fresh timestamp")
+	}else{
 	client := new(http.Client)
-	resp, err := client.Get("http://www.yr.no/stad/Andorra/Encamp/Vila/varsel.xml")
+	resp, err := client.Get(weatherUrl)
 	if err != nil {
 		panic(err)
 	}
@@ -91,8 +101,13 @@ func willRain() float64 {
 		fmt.Println("Rain total: ")
 		fmt.Println(rainTotal)
 	}
+		fmt.Println("***************************************************************")
+		fmt.Println("fetching weather data from ", weatherUrl)
+		fmt.Println("***************************************************************")
+		self.rainTotal = rainTotal
+		self.previousTime = time.Now()
+	}
 	//fmt.Println(weatherData)
-	return rainTotal
 }
 
 func runPump() {
