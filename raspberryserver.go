@@ -44,7 +44,12 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(w, err)
 		}
 	}
-
+	if len(r.Form["URL"]) > 0 {
+		if weatherUrl != r.Form["URL"][0]{
+			rainStruct.previousTime = time.Now()
+		}
+		weatherUrl = r.Form["URL"][0]
+		}
 	fmt.Fprintln(w, "<form>")
 	fmt.Fprintln(w, "Input lowest acceptable soil moisture level: <br/>")
 	fmt.Fprintf(w, "moisture: <input type='text' name='moisture' value='%v'> <br/>", minMoisture)
