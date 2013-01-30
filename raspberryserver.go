@@ -48,6 +48,10 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "<form>")
 	fmt.Fprintln(w, "Input lowest acceptable soil moisture level: <br/>")
 	fmt.Fprintf(w, "moisture: <input type='text' name='moisture' value='%v'> <br/>", minMoisture)
+
+	fmt.Fprintln(w, "Input weather source URL from : <br/>")
+	fmt.Fprintf(w, "URL: <input type='text' name='URL' value='%v' size=%v> <br/>", weatherUrl, len(weatherUrl))
+
 	fmt.Fprintln(w, "Total rain during the next 24 hours: ")
 	fmt.Fprintln(w, rainStruct.rainTotal)
 	fmt.Fprintln(w, " mm </br>" )
