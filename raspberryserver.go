@@ -22,6 +22,7 @@ import (
 )
 
 var minMoisture = 0.5
+var rainLimit = 4.0
 var rain = false
 var rainStruct = &rainCheck{}
 var weatherUrl = "http://www.yr.no/stad/Sverige/Stockholm/Stockholm/varsel.xml"
@@ -45,6 +46,16 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(w, err)
 		}
 	}
+
+	if len(r.Form["rainlimit"]) > 0 {
+		var err error
+		rainLimit, err = strconv.ParseFloat(r.Form["rainlimit"][0], 64)
+		if err != nil {
+			fmt.Fprintln(w, err)
+		}
+	}
+
+
 	if len(r.Form["URL"]) > 0 {
 		if weatherUrl != r.Form["URL"][0]{
 			rainStruct.previousTime = time.Now()
@@ -53,15 +64,18 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		}
 	fmt.Fprintln(w, "<form>")
 	fmt.Fprintln(w, "Input lowest acceptable soil moisture level: <br/>")
-	fmt.Fprintf(w, "moisture: <input type='text' name='moisture' value='%v'> <br/>", minMoisture)
+	fmt.Fprintf(w, "moisture (min: 0.0, max: 1.0): <input type='text' name='moisture' value='%v'> <br/>", minMoisture)
+
+	fmt.Fprintln(w, "How many millimeters of rain in the forecast are required to delay watering? <br/>")
+	fmt.Fprintf(w, "Rain (mm): <input type='text' name='rainlimit' value='%v'> <br/>", rainLimit)
 
 	fmt.Fprintln(w, "Input weather source URL for your location from <a href='http://fil.nrk.no/yr/viktigestader/verda.txt'>yr.no</a>: <br/>")
 	fmt.Fprintf(w, "URL: <input type='text' name='URL' value='%v' size=%v> <br/>", weatherUrl, len(weatherUrl))
 
-	fmt.Fprintln(w, "Total rain during the next 24 hours: ")
+	fmt.Fprintln(w, "Total rain forecast in your location during the next 24 hours: ")
 	fmt.Fprintln(w, rainStruct.rainTotal)
 	fmt.Fprintln(w, " mm </br>" )
-	//put in override "water anyway? buttons: today always no"
+	//put in override "water anyway? buttons: today, always, no"
 	//insert minimum mm of rain per 24 h for delayed watering
 	fmt.Fprintln(w, "<input type='submit' value='Submit'>")
 	fmt.Fprintln(w, "</form>")
@@ -131,7 +145,7 @@ func checkLoop() {
 		var watering bool
 		moisture := getMoisture()
 		
-		if (moisture < minMoisture) && !(rain) {
+		if (moisture < minMoisture) && (rainStruct.rainTotal < rainLimit) {
 			watering = true
 		} else {
 			watering = false
