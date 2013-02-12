@@ -1,8 +1,9 @@
 package main
 
 /*
+
 Webserver implemented on RaspberryPi hardware
-Collect weather data from a website/api (or another server masquerading as a sensor)
+Collect weather data from a website/api
 Moisture sensor gives soil moisture data
 RaspberryPi decides whether or not to turn on watering system/valve
 Web server lets user configure the system through web form
@@ -54,7 +55,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Input lowest acceptable soil moisture level: <br/>")
 	fmt.Fprintf(w, "moisture: <input type='text' name='moisture' value='%v'> <br/>", minMoisture)
 
-	fmt.Fprintln(w, "Input weather source URL from : <br/>")
+	fmt.Fprintln(w, "Input weather source URL for your location from <a href='http://fil.nrk.no/yr/viktigestader/verda.txt'>yr.no</a>: <br/>")
 	fmt.Fprintf(w, "URL: <input type='text' name='URL' value='%v' size=%v> <br/>", weatherUrl, len(weatherUrl))
 
 	fmt.Fprintln(w, "Total rain during the next 24 hours: ")
@@ -62,6 +63,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, " mm </br>" )
 	//put in override "water anyway? buttons: today always no"
 	//insert minimum mm of rain per 24 h for delayed watering
+	fmt.Fprintln(w, "<input type='submit' value='Submit'>")
 	fmt.Fprintln(w, "</form>")
 }
 
@@ -121,7 +123,7 @@ func (self *rainCheck) willRain() {
 
 func runPump() {
 	fmt.Println("Pump is running")
-	fmt.Println(rain)
+	//fmt.Println(rain)
 }
 
 func checkLoop() {
@@ -138,7 +140,7 @@ func checkLoop() {
 			runPump()
 		} else {
 			fmt.Println("Pump is not running")
-			fmt.Println(rain)
+			fmt.Println(minMoisture)
 		}
 		time.Sleep(2 * time.Second)
 
