@@ -17,17 +17,20 @@ import (
 	"strconv"
 	"time"
 	"encoding/xml"
+	"encoding/json"
+	"os"
 )
 
-var minMoisture = 0.5
-var rainLimit = 4.0
+
 var rain = false
 var rainStruct = &rainCheck{}
-var weatherUrl = "http://www.yr.no/stad/Sverige/Stockholm/Stockholm/varsel.xml"
+var configStruct = &configuration{
+	Url:"http://www.yr.no/stad/Sverige/Stockholm/Stockholm/varsel.xml",
+}
 type configuration struct{
-	moist float64
-	rain float64
-	url string
+	Moist float64
+	RainLimit float64
+	Url string
 }
 
 
@@ -38,42 +41,50 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		rain = true
 		fmt.Println("rain is true")
 	}
-	fmt.Println(r)
 	r.ParseForm()
-	fmt.Println(r.Form["moisture"])
 	w.Header().Set("Content-Type", "text/html")
+
 	if len(r.Form["moisture"]) > 0 {
 		var err error
-		minMoisture, err = strconv.ParseFloat(r.Form["moisture"][0], 64)
+		var oldMin = configStruct.Moist
+		configStruct.Moist, err = strconv.ParseFloat(r.Form["moisture"][0], 64)
 		if err != nil {
 			fmt.Fprintln(w, err)
+		}
+		if oldMin != configStruct.Moist{
+			configStruct.saveSettings()
 		}
 	}
 
 	if len(r.Form["rainlimit"]) > 0 {
 		var err error
-		rainLimit, err = strconv.ParseFloat(r.Form["rainlimit"][0], 64)
+		var oldLimit = configStruct.RainLimit
+		configStruct.RainLimit, err = strconv.ParseFloat(r.Form["rainlimit"][0], 64)
 		if err != nil {
 			fmt.Fprintln(w, err)
+		}
+		if oldLimit != configStruct.RainLimit{
+			configStruct.saveSettings()
 		}
 	}
 
 
 	if len(r.Form["URL"]) > 0 {
-		if weatherUrl != r.Form["URL"][0]{
+		if configStruct.Url != r.Form["URL"][0]{
 			rainStruct.previousTime = time.Now()
 		}
-		weatherUrl = r.Form["URL"][0]
+		configStruct.Url = r.Form["URL"][0]
+		configStruct.saveSettings()
 		}
 	fmt.Fprintln(w, "<form>")
 	fmt.Fprintln(w, "Input lowest acceptable soil moisture level: <br/>")
-	fmt.Fprintf(w, "moisture (min: 0.0, max: 1.0): <input type='text' name='moisture' value='%v'> <br/><br/>", minMoisture)
+	fmt.Fprintf(w, "moisture (min: 0.0, max: 1.0): <input type='text' name='moisture' value='%v'> <br/><br/>", configStruct.Moist)
 
 	fmt.Fprintln(w, "How many millimeters of rain in the forecast are required to delay watering? <br/>")
-	fmt.Fprintf(w, "Rain (mm): <input type='text' name='rainlimit' value='%v'> <br/><br/>", rainLimit)
+	fmt.Fprintf(w, "Rain (mm): <input type='text' name='rainlimit' value='%v'> <br/><br/>", configStruct.RainLimit)
 
 	fmt.Fprintln(w, "Input weather source URL for your location from <a href='http://fil.nrk.no/yr/viktigestader/verda.txt'>yr.no</a>: <br/>")
-	fmt.Fprintf(w, "URL: <input type='text' name='URL' value='%v' size=%v> <br/><br/>", weatherUrl, len(weatherUrl))
+	fmt.Fprintf(w, "URL: <input type='text' name='URL' value='%v' size=%v> <br/><br/>", configStruct.Url, len(configStruct.Url))
 
 	fmt.Fprintln(w, "Total rain forecast in your location during the next 24 hours: ")
 	fmt.Fprintln(w, rainStruct.rainTotal)
@@ -108,12 +119,29 @@ type WeatherData struct {
 	Times []Time `xml:"forecast>tabular>time"`
 }
 
+func (self *configuration) saveSettings() {
+	f, err := os.Create("settings.json")
+	if err != nil {
+		panic(err)
+	}
+	enc := json.NewEncoder(f)
+	fmt.Println("saving:", self, "in", f.Name())
+	err = enc.Encode(self)
+	if err != nil {
+		panic(err)
+	}
+	err = f.Close()
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (self *rainCheck) willRain() {
 	if time.Now().Sub(self.previousTime)<time.Hour{
 		fmt.Println("willRain func fresh timestamp")
 	}else{
 	client := new(http.Client)
-	resp, err := client.Get(weatherUrl)
+	resp, err := client.Get(configStruct.Url)
 	if err != nil {
 		panic(err)
 	}
@@ -130,7 +158,7 @@ func (self *rainCheck) willRain() {
 		fmt.Println(rainTotal)
 	}
 		fmt.Println("***************************************************************")
-		fmt.Println("fetching weather data from ", weatherUrl)
+		fmt.Println("fetching weather data from ", configStruct.Url)
 		fmt.Println("***************************************************************")
 		self.rainTotal = rainTotal
 		self.previousTime = time.Now()
@@ -148,7 +176,7 @@ func checkLoop() {
 		var watering bool
 		moisture := getMoisture()
 		
-		if (moisture < minMoisture) && (rainStruct.rainTotal < rainLimit) {
+		if (moisture < configStruct.Moist) && (rainStruct.rainTotal < configStruct.RainLimit) {
 			watering = true
 		} else {
 			watering = false
@@ -157,7 +185,7 @@ func checkLoop() {
 			runPump()
 		} else {
 			fmt.Println("Pump is not running")
-			fmt.Println(minMoisture)
+			fmt.Println(configStruct.Moist)
 		}
 		time.Sleep(2 * time.Second)
 
@@ -165,6 +193,14 @@ func checkLoop() {
 }
 
 func main() {
+	f, err := os.Open("settings.json")
+	if err == nil{
+		json.NewDecoder(f).Decode(configStruct)
+		fmt.Println(configStruct)
+		f.Close()
+	}else{
+		fmt.Println(err)
+	}
 	go checkLoop()
 	http.HandleFunc("/", http.HandlerFunc(handle))
 	if err := http.ListenAndServe(":25601", nil); err != nil {
