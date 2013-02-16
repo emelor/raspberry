@@ -14,18 +14,24 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"net"
 	"strconv"
 	"time"
 	"encoding/xml"
 	"encoding/json"
 	"os"
+	"net/smtp"
+	"flag"
 )
 
 
 var rain = false
 var rainStruct = &rainCheck{}
 var configStruct = &configuration{
+	Moist: 0.5,
+	RainLimit: 2,
 	Url:"http://www.yr.no/stad/Sverige/Stockholm/Stockholm/varsel.xml",
+
 }
 type configuration struct{
 	Moist float64
@@ -140,28 +146,28 @@ func (self *rainCheck) willRain() {
 	if time.Now().Sub(self.previousTime)<time.Hour{
 		fmt.Println("willRain func fresh timestamp")
 	}else{
-	client := new(http.Client)
-	resp, err := client.Get(configStruct.Url)
-	if err != nil {
-		panic(err)
-	}
-	var weatherData WeatherData
-	if err := xml.NewDecoder(resp.Body).Decode(&weatherData); err != nil {
-		panic(err)
-	}
-	var rainTotal = 0.0
-	for i:=0; i<8; i++ {
-		rainMm := weatherData.Times[i].Precip.Value
-		rainTotal = rainTotal + rainMm
-		fmt.Println(rainMm)
-		fmt.Println("Rain total: ")
-		fmt.Println(rainTotal)
-	}
+		self.previousTime = time.Now()
+		client := new(http.Client)
+		resp, err := client.Get(configStruct.Url)
+		if err != nil {
+			panic(err)
+		}
+		var weatherData WeatherData
+		if err := xml.NewDecoder(resp.Body).Decode(&weatherData); err != nil {
+			panic(err)
+		}
+		var rainTotal = 0.0
+		for i:=0; i<8; i++ {
+			rainMm := weatherData.Times[i].Precip.Value
+			rainTotal = rainTotal + rainMm
+			fmt.Println(rainMm)
+			fmt.Println("Rain total: ")
+			fmt.Println(rainTotal)
+		}
 		fmt.Println("***************************************************************")
 		fmt.Println("fetching weather data from ", configStruct.Url)
 		fmt.Println("***************************************************************")
 		self.rainTotal = rainTotal
-		self.previousTime = time.Now()
 	}
 	//fmt.Println(weatherData)
 }
@@ -192,7 +198,30 @@ func checkLoop() {
 	}
 }
 
+func sendMail() {
+		IPAddress, err := net.InterfaceAddrs()
+		if err != nil{
+			panic(err)
+		}
+		err = smtp.SendMail(
+			"gmail-smtp-in.l.google.com:25",
+			nil,
+			"noreply@raspberrypi",
+			[]string{"emelor@gmail.com"},
+		[]byte(fmt.Sprintf("To: emelor@gmail.com\n\nIP addresses: %v", IPAddress)))
+
+		if err != nil{
+			panic(err)
+		}
+}
+
 func main() {
+
+	var send = flag.String("send", "false", "Whether to send IP address in an email at startup")
+	flag.Parse()
+	if *send == "true" {
+		sendMail()
+	}
 	f, err := os.Open("settings.json")
 	if err == nil{
 		json.NewDecoder(f).Decode(configStruct)
