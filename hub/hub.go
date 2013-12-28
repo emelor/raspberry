@@ -1,12 +1,13 @@
-package main
+package hub
 
 /*
 
-Webserver implemented on RaspberryPi hardware
+Webserver 
 Collect weather data from a website/api
-Moisture sensor gives soil moisture data
-RaspberryPi decides whether or not to turn on watering system/valve
 Web server lets user configure the system through web form
+Communicate with raspberryPi sensor node:
+-send weather data, user settings
+-receive watering data (pump status, minutes watered since last update), soil moisture data
 
 */
 
@@ -30,23 +31,98 @@ var rainStruct = &rainCheck{}
 var configStruct = &configuration{
 	Moist: 0.5,
 	RainLimit: 2,
+	
 	Url:"http://www.yr.no/stad/Sverige/Stockholm/Stockholm/varsel.xml",
 
 }
-type configuration struct{
-	Moist float64
-	RainLimit float64
-	Url string
+
+type B struct {
+	...
 }
+
+type A struct {
+	MyB B
+}
+
+a := A{
+	MyB: B{
+		...
+	}
+	
+}
+type timedOverride struct {
+	//time and #minutes for daily timed override
+	minutes int
+	hours int
+	duration time.Duration
+	
+}
+
+type manualOverride struct {
+	//holds variables for manual override
+	 manualOverrideBool bool
+	 duration time.Duration
+}
+
+type configuration struct{
+	//User settings: soil moisture and rain forecast thresholds
+	moistureThreshold float64
+	rainLimit float64
+	//insert other parameters
+}
+
+type rainCheck struct {
+	previousTime time.Time 
+	rainTotal float64
+}
+
+type Time struct {
+	From string `xml:"from,attr"`
+	To string `xml:"to,attr"`
+	Precip Precipitation `xml:"precipitation"`
+}
+type Precipitation struct {
+	Value float64 `xml:"value,attr"`
+}
+
+type WeatherData struct {
+	Times []Time `xml:"forecast>tabular>time"`
+}
+
+type Hub struct {
+	configuration common.Configuration
+}
+
+
+func(self *Hub) GetConfiguration() common.Configuration {
+	return self.configuration
+	
+}
+
+func (pi) PushSettings(){
+	//read settings from file 
+	f, err := os.Open("settings.json")
+	if err == nil{
+		json.NewDecoder(f).Decode(configStruct)
+		//fmt.Println(configStruct)
+		f.Close()
+	}else{
+		fmt.Println(err)
+	}
+	//send settings to pi
+	pi.NewSettings(configStruct)
+}
+//Timer struct:
+//routineCheck timer
+//manual override on timer 
+//timer override timer
+
+
 
 
 //Web server:
 func handle(w http.ResponseWriter, r *http.Request) {
-	rainStruct.willRain()
-	if rainStruct.rainTotal>0 {
-		rain = true
-		fmt.Println("rain is true")
-	}
+	
 	r.ParseForm()
 	w.Header().Set("Content-Type", "text/html")
 
@@ -101,29 +177,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "</form>")
 }
 
-func getMoisture() float64 {
-	moisture := rand.Float64()
-	return moisture
 
-}
-
-type rainCheck struct {
-	previousTime time.Time 
-	rainTotal float64
-}
-
-type Time struct {
-	From string `xml:"from,attr"`
-	To string `xml:"to,attr"`
-	Precip Precipitation `xml:"precipitation"`
-}
-type Precipitation struct {
-	Value float64 `xml:"value,attr"`
-}
-
-type WeatherData struct {
-	Times []Time `xml:"forecast>tabular>time"`
-}
 
 func (self *configuration) saveSettings() {
 	f, err := os.Create("settings.json")
@@ -142,97 +196,16 @@ func (self *configuration) saveSettings() {
 	}
 }
 
-func (self *rainCheck) willRain() {
-	if time.Now().Sub(self.previousTime)<time.Hour{
-		fmt.Println("willRain func fresh timestamp")
-	}else{
-		self.previousTime = time.Now()
-		client := new(http.Client)
-		resp, err := client.Get(configStruct.Url)
-		if err != nil {
-			panic(err)
-		}
-		var weatherData WeatherData
-		if err := xml.NewDecoder(resp.Body).Decode(&weatherData); err != nil {
-			panic(err)
-		}
-		var rainTotal = 0.0
-		for i:=0; i<8; i++ {
-			rainMm := weatherData.Times[i].Precip.Value
-			rainTotal = rainTotal + rainMm
-			fmt.Println(rainMm)
-			fmt.Println("Rain total: ")
-			fmt.Println(rainTotal)
-		}
-		fmt.Println("***************************************************************")
-		fmt.Println("fetching weather data from ", configStruct.Url)
-		fmt.Println("***************************************************************")
-		self.rainTotal = rainTotal
-	}
-	//fmt.Println(weatherData)
-}
 
-func runPump() {
-	fmt.Println("Pump is running")
-	//fmt.Println(rain)
-}
 
-func checkLoop() {
-	for {
-		var watering bool
-		moisture := getMoisture()
-		fmt.Println("")
-		fmt.Println("Actual soil moisture, lowest minimum soil moisture:")
-		fmt.Println(moisture)
-		fmt.Println(configStruct.Moist)
-		
-		if (moisture < configStruct.Moist) && (rainStruct.rainTotal < configStruct.RainLimit) {
-			watering = true
-		} else {
-			watering = false
-		}
-		if watering {
-			runPump()
-		} else {
-			fmt.Println("Pump is not running")
-		}
-		time.Sleep(2 * time.Second)
 
-	}
-}
 
-func sendMail() {
-		IPAddress, err := net.InterfaceAddrs()
-		if err != nil{
-			panic(err)
-		}
-		err = smtp.SendMail(
-			"gmail-smtp-in.l.google.com:25",
-			nil,
-			"noreply@raspberrypi",
-			[]string{"emelor@gmail.com"},
-		[]byte(fmt.Sprintf("To: emelor@gmail.com\n\nIP addresses: %v", IPAddress)))
 
-		if err != nil{
-			panic(err)
-		}
-}
 
 func main() {
 
-	var send = flag.String("send", "false", "Whether to send IP address in an email at startup")
-	flag.Parse()
-	if *send == "true" {
-		sendMail()
-	}
-	f, err := os.Open("settings.json")
-	if err == nil{
-		json.NewDecoder(f).Decode(configStruct)
-		fmt.Println(configStruct)
-		f.Close()
-	}else{
-		fmt.Println(err)
-	}
+	
+
 	go checkLoop()
 	http.HandleFunc("/", http.HandlerFunc(handle))
 	if err := http.ListenAndServe(":25601", nil); err != nil {
