@@ -1,2 +1,0 @@
-//run HUB
-package main

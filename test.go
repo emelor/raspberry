@@ -1,21 +1,16 @@
 package main
+
 import (
-  "pi"
-  "hub"
+	"./hub"
+	"./pi"
 )
 
-func main () {
-//1: instantiera hub
-hub := new(hub.Hub)
-//hub := &hub.Hub{}
-//2: instantiera pi
-pi := new(pi.Pi)
+func main() {
+	//1: instantiera hub
+	h := hub.New()
+	//2: instantiera pi
+	p := pi.New()
 
-//3: pi: connect to hub
-pi.ConnectTo(hub)
-hub.Register(pi)
-pi.GetWeather()
-hub.PushSettings(pi)
-pi.Routine()
+	//3: pi: connect to hub
+	p.ConnectTo(h)
 }
-
