@@ -33,6 +33,7 @@ func (self *Pi) UpdateConfig(config common.Configuration) {
 
 func (self *Pi) UpdateWeather(weather common.Weather) {
 	self.weather = weather
+	fmt.Println("got weather", self.weather)
 	//save new config to file
 }
 
@@ -49,7 +50,9 @@ func (self *Pi) RoutineCheck() {
 
 		if (moisture < self.config.MoistureThreshold) && (self.weather.Rain <= self.config.RainLimit) {
 			watering = true
+
 			fmt.Println(self.weather.Rain)
+
 			fmt.Println("watering = true")
 		} else {
 			watering = false

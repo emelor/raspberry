@@ -33,10 +33,22 @@ type WeatherData struct {
 //...
 //...
 
-func New() *Hub {
+func New() (result *Hub) {
 	fmt.Println("new hub!")
-	return &Hub{}
+	result = &Hub{}
+	//load default settings
+	result.DefaultSettings()
+	checkedOnce := make(chan bool)
+	go result.checkWeather(checkedOnce)
+	<-checkedOnce
+	return
 }
+func (self *Hub) DefaultSettings() {
+	self.config.MoistureThreshold = 0.5
+	self.config.RainLimit = 2
+	self.config.WeatherUrl = "http://www.yr.no/stad/Sverige/Stockholm/Stockholm/varsel.xml"
+}
+
 func (self *Hub) Register(pi common.Pi) {
 	self.registeredPis = append(self.registeredPis, pi)
 	pi.UpdateConfig(self.config)
@@ -55,7 +67,7 @@ func (self *Hub) transferWeather() {
 	}
 }
 
-func (self *Hub) checkWeather() {
+func (self *Hub) checkWeather(checkedOnce chan bool) {
 	for {
 		client := new(http.Client)
 		resp, err := client.Get(self.config.WeatherUrl)
@@ -77,7 +89,12 @@ func (self *Hub) checkWeather() {
 		fmt.Println("***************************************************************")
 		fmt.Println("fetching weather data from ", self.config.WeatherUrl)
 		fmt.Println("***************************************************************")
+		fmt.Println("rainTotal: ", rainTotal)
 		self.weather.Rain = rainTotal
+		if checkedOnce != nil {
+			checkedOnce <- true
+			checkedOnce = nil
+		}
 		time.Sleep(time.Hour)
 	}
 }
