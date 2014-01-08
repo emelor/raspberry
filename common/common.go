@@ -21,6 +21,7 @@ type Hub interface {
 
 type Weather struct {
 	//rain during next 24 h
+	Rain float64
 	//max temp during next 24 h
 
 }

@@ -13,6 +13,7 @@ type Hub struct {
 	config        common.Configuration
 	rain          float64
 	registeredPis []common.Pi
+	weather       common.Weather
 }
 
 type Time struct {
@@ -28,12 +29,27 @@ type WeatherData struct {
 	Times []Time `xml:"forecast>tabular>time"`
 }
 
-func New() (returnValue *Hub) {
+//func New() (returnValue *Hub)
+func New() *Hub {
+	fmt.Println("new hub!")
 	return &Hub{}
 }
 func (self *Hub) Register(pi common.Pi) {
 	self.registeredPis = append(self.registeredPis, pi)
 }
+
+func (self *Hub) transferSettings() {
+	for _, pi := range self.registeredPis {
+		pi.UpdateConfig(self.config)
+	}
+}
+
+func (self *Hub) transferWeather() {
+	for i := 0; i < len(self.registeredPis); i++ {
+		self.registeredPis[i].Weather = self.weather
+	}
+}
+
 func (self *Hub) checkWeather() {
 	for {
 		client := new(http.Client)
@@ -56,7 +72,7 @@ func (self *Hub) checkWeather() {
 		fmt.Println("***************************************************************")
 		fmt.Println("fetching weather data from ", self.config.WeatherUrl)
 		fmt.Println("***************************************************************")
-		self.rain = rainTotal
+		self.weather.Rain = rainTotal
 		time.Sleep(time.Hour)
 	}
 }

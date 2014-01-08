@@ -1,6 +1,7 @@
 package pi
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -9,8 +10,9 @@ import (
 
 type Pi struct {
 	//
-	config common.Configuration
-	rain   float64
+	config  common.Configuration
+	weather common.Weather
+	rain    float64
 }
 
 func New() *Pi {
@@ -25,6 +27,7 @@ func (self *Pi) getMoisture() float64 {
 }
 
 func (self *Pi) runPump() {
+	fmt.Println("Pump running")
 
 }
 
@@ -34,10 +37,14 @@ func (self *Pi) RoutineCheck() {
 		//Soil moisture sensor reading
 		moisture := self.getMoisture()
 
-		if (moisture < self.config.MoistureThreshold) && (self.rain < self.config.RainLimit) {
+		if (moisture < self.config.MoistureThreshold) && (self.rain <= self.config.RainLimit) {
 			watering = true
+			fmt.Println("watering = true")
 		} else {
 			watering = false
+			self.config.MoistureThreshold = 0.5
+			fmt.Println("watering = false")
+
 		}
 		if watering {
 			self.runPump()
