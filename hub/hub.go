@@ -11,11 +11,13 @@ import (
 
 type Hub struct {
 	config        common.Configuration
+	weather       common.Weather
 	rain          float64
 	registeredPis []common.Pi
-	weather       common.Weather
 }
 
+//Time, Precipitation and WeatherData structs are needed to mirror the structure of yr.no weather data
+//...
 type Time struct {
 	From   string        `xml:"from,attr"`
 	To     string        `xml:"to,attr"`
@@ -24,18 +26,21 @@ type Time struct {
 type Precipitation struct {
 	Value float64 `xml:"value,attr"`
 }
-
 type WeatherData struct {
 	Times []Time `xml:"forecast>tabular>time"`
 }
 
-//func New() (returnValue *Hub)
+//...
+//...
+
 func New() *Hub {
 	fmt.Println("new hub!")
 	return &Hub{}
 }
 func (self *Hub) Register(pi common.Pi) {
 	self.registeredPis = append(self.registeredPis, pi)
+	pi.UpdateConfig(self.config)
+	pi.UpdateWeather(self.weather)
 }
 
 func (self *Hub) transferSettings() {
@@ -45,8 +50,8 @@ func (self *Hub) transferSettings() {
 }
 
 func (self *Hub) transferWeather() {
-	for i := 0; i < len(self.registeredPis); i++ {
-		self.registeredPis[i].Weather = self.weather
+	for _, pi := range self.registeredPis {
+		pi.UpdateWeather(self.weather)
 	}
 }
 

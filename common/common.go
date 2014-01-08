@@ -1,10 +1,10 @@
 package common
 
 type Pi interface {
-	//NewSettings
+	UpdateConfig(Configuration)
+	UpdateWeather(Weather)
 	//manual on	(minutes)
 	//get status update
-	//routine (water?, wait, water?, wait)
 
 }
 

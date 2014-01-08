@@ -26,6 +26,16 @@ func (self *Pi) getMoisture() float64 {
 	return moisture
 }
 
+func (self *Pi) UpdateConfig(config common.Configuration) {
+	self.config = config
+	//save new config to file
+}
+
+func (self *Pi) UpdateWeather(weather common.Weather) {
+	self.weather = weather
+	//save new config to file
+}
+
 func (self *Pi) runPump() {
 	fmt.Println("Pump running")
 
@@ -37,8 +47,9 @@ func (self *Pi) RoutineCheck() {
 		//Soil moisture sensor reading
 		moisture := self.getMoisture()
 
-		if (moisture < self.config.MoistureThreshold) && (self.rain <= self.config.RainLimit) {
+		if (moisture < self.config.MoistureThreshold) && (self.weather.Rain <= self.config.RainLimit) {
 			watering = true
+			fmt.Println(self.weather.Rain)
 			fmt.Println("watering = true")
 		} else {
 			watering = false
