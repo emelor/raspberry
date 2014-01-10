@@ -67,6 +67,7 @@ func (self *Hub) saveSettings() {
 	if err != nil {
 		panic(err)
 	}
+	self.transferSettings()
 }
 
 func (self *Hub) Register(pi common.Pi) {

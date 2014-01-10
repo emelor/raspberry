@@ -1,8 +1,10 @@
 package pi
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
 	"time"
 
 	"../common"
@@ -21,6 +23,39 @@ func New() *Pi {
 	return &Pi{}
 
 }
+func (self *Pi) saveSettings() {
+	f, err := os.Create("settings.json")
+	if err != nil {
+		panic(err)
+	}
+	enc := json.NewEncoder(f)
+	fmt.Println("saving:", self.config, "in", f.Name())
+	err = enc.Encode(self.config)
+	if err != nil {
+		panic(err)
+	}
+	err = f.Close()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (self *Pi) saveWeather() {
+	f, err := os.Create("weather.json")
+	if err != nil {
+		panic(err)
+	}
+	enc := json.NewEncoder(f)
+	fmt.Println("saving:", self.weather, "in", f.Name())
+	err = enc.Encode(self.weather)
+	if err != nil {
+		panic(err)
+	}
+	err = f.Close()
+	if err != nil {
+		panic(err)
+	}
+}
 
 func (self *Pi) getMoisture() float64 {
 
@@ -31,6 +66,8 @@ func (self *Pi) getMoisture() float64 {
 func (self *Pi) UpdateConfig(config common.Configuration) {
 	self.config = config
 	//save new config to file
+	self.saveSettings()
+
 	if self.config.ManualOn {
 		self.runPump(self.config.MinutesOn)
 	}
@@ -42,7 +79,8 @@ func (self *Pi) UpdateConfig(config common.Configuration) {
 func (self *Pi) UpdateWeather(weather common.Weather) {
 	self.weather = weather
 	fmt.Println("got weather", self.weather)
-	//save new config to file
+	//save new weather to file
+	self.saveWeather()
 }
 
 func (self *Pi) runPump(minutes int) {
@@ -95,7 +133,7 @@ func (self *Pi) RoutineCheck() {
 
 		}
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 }
 
