@@ -3,6 +3,7 @@
 *.a
 *.so
 settings.json
+weather.json
 
 # Folders
 _obj
