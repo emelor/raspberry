@@ -1,9 +1,11 @@
 package hub
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"../common"
@@ -31,22 +33,40 @@ type WeatherData struct {
 }
 
 //...
-//...
 
-func New() (result *Hub) {
+func New() (hubInstance *Hub) {
 	fmt.Println("new hub!")
-	result = &Hub{}
+	hubInstance = &Hub{}
 	//load default settings
-	result.DefaultSettings()
+	hubInstance.DefaultSettings()
 	checkedOnce := make(chan bool)
-	go result.checkWeather(checkedOnce)
+	go hubInstance.checkWeather(checkedOnce)
 	<-checkedOnce
+	hubInstance.serve()
+
 	return
 }
 func (self *Hub) DefaultSettings() {
 	self.config.MoistureThreshold = 0.5
 	self.config.RainLimit = 2
 	self.config.WeatherUrl = "http://www.yr.no/stad/Sverige/Stockholm/Stockholm/varsel.xml"
+}
+
+func (self *Hub) saveSettings() {
+	f, err := os.Create("settings.json")
+	if err != nil {
+		panic(err)
+	}
+	enc := json.NewEncoder(f)
+	fmt.Println("saving:", self.config, "in", f.Name())
+	err = enc.Encode(self.config)
+	if err != nil {
+		panic(err)
+	}
+	err = f.Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (self *Hub) Register(pi common.Pi) {
@@ -68,6 +88,8 @@ func (self *Hub) transferWeather() {
 }
 
 func (self *Hub) checkWeather(checkedOnce chan bool) {
+	//check periodically
+	//don't check if fresh timestamp?
 	for {
 		client := new(http.Client)
 		resp, err := client.Get(self.config.WeatherUrl)

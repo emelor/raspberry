@@ -10,9 +10,11 @@ import (
 
 type Pi struct {
 	//
-	config  common.Configuration
-	weather common.Weather
-	rain    float64
+	config        common.Configuration
+	weather       common.Weather
+	rain          float64
+	wateringTimer *time.Timer
+	pumpRunning   bool
 }
 
 func New() *Pi {
@@ -29,6 +31,12 @@ func (self *Pi) getMoisture() float64 {
 func (self *Pi) UpdateConfig(config common.Configuration) {
 	self.config = config
 	//save new config to file
+	if self.config.ManualOn {
+		self.runPump(self.config.MinutesOn)
+	}
+	if self.config.ManualOff {
+		self.stopPump(self.config.MinutesOff)
+	}
 }
 
 func (self *Pi) UpdateWeather(weather common.Weather) {
@@ -37,9 +45,31 @@ func (self *Pi) UpdateWeather(weather common.Weather) {
 	//save new config to file
 }
 
-func (self *Pi) runPump() {
-	fmt.Println("Pump running")
+func (self *Pi) runPump(minutes int) {
+	//Start pump
+	if self.pumpRunning {
+		fmt.Println("Pump already running. New stop time in ", minutes, " minutes.")
+	} else {
+		fmt.Println("Pump starting. Stop time in ", minutes, " minutes.")
+	}
+	self.pumpRunning = true
+	if self.wateringTimer != nil {
+		self.wateringTimer.Stop()
+	}
+	self.wateringTimer = time.AfterFunc(time.Duration(minutes)*time.Minute, func() { self.stopPump(0) })
 
+}
+
+func (self *Pi) stopPump(minutes int) {
+	//Stop pump, block watering for specified number of minutes
+	//Start watering/evaluation only if timer has run out or if "ManualOn" is pressed in the UI
+	if self.pumpRunning {
+		fmt.Println("Stopping pump")
+	}
+	self.pumpRunning = false
+	if self.wateringTimer != nil {
+		self.wateringTimer.Stop()
+	}
 }
 
 func (self *Pi) RoutineCheck() {
@@ -61,7 +91,7 @@ func (self *Pi) RoutineCheck() {
 
 		}
 		if watering {
-			self.runPump()
+			self.runPump(1)
 
 		}
 

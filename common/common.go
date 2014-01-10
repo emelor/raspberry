@@ -3,19 +3,14 @@ package common
 type Pi interface {
 	UpdateConfig(Configuration)
 	UpdateWeather(Weather)
-	//manual on	(minutes)
-	//get status update
-
+	//status update
+	//data update
 }
 
 type Hub interface {
 	Register(Pi)
-	//get weather
-	//request data update
+
 	//show webpage
-	//push settings
-	//push weather
-	//register new node
 
 }
 
@@ -30,4 +25,10 @@ type Configuration struct {
 	MoistureThreshold float64
 	RainLimit         float64
 	WeatherUrl        string
+	ManualOn          bool
+	MinutesOn         int
+	ManualOff         bool
+	MinutesOff        int
+	//MinutesDaily		int
+	//TimeDaily
 }
