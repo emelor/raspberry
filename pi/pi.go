@@ -17,6 +17,7 @@ type Pi struct {
 	rain          float64
 	wateringTimer *time.Timer
 	pumpRunning   bool
+	timeStamp     time.Time
 }
 
 func New() *Pi {
@@ -69,9 +70,17 @@ func (self *Pi) UpdateConfig(config common.Configuration) {
 	self.saveSettings()
 
 	if self.config.ManualOn {
+		self.config.ManualOn = false
+		self.config.ManualOff = false
+		self.timeStamp = time.Now()
+		fmt.Println("MinutesOn = ", self.config.MinutesOn)
 		self.runPump(self.config.MinutesOn)
 	}
 	if self.config.ManualOff {
+		self.config.ManualOn = false
+		self.config.ManualOff = false
+		self.timeStamp = time.Now()
+		fmt.Println("MinutesOff = ", self.config.MinutesOff)
 		self.stopPump(self.config.MinutesOff)
 	}
 }
@@ -101,6 +110,8 @@ func (self *Pi) runPump(minutes int) {
 func (self *Pi) stopPump(minutes int) {
 	//Stop pump, block watering for specified number of minutes
 	//Start watering/evaluation only if timer has run out or if "ManualOn" is pressed in the UI
+	self.config.ManualOn = false
+
 	if self.pumpRunning {
 		fmt.Println("Stopping pump")
 	}
@@ -112,25 +123,32 @@ func (self *Pi) stopPump(minutes int) {
 
 func (self *Pi) RoutineCheck() {
 	for {
-		var watering bool
-		//Soil moisture sensor reading
-		moisture := self.getMoisture()
+		timeSince := time.Now().Sub(self.timeStamp)
+		fmt.Println("timeSince = ", timeSince)
+		minOn := time.Minute * time.Duration(self.config.MinutesOn)
+		minOff := time.Minute * time.Duration(self.config.MinutesOff)
+		//Evaluate only if enough time has elapsed since last override order (self.timeStamp)
+		if timeSince > minOn && timeSince > minOff {
+			var watering bool
+			//Soil moisture sensor reading
+			moisture := self.getMoisture()
 
-		if (moisture < self.config.MoistureThreshold) && (self.weather.Rain <= self.config.RainLimit) {
-			watering = true
+			if (moisture < self.config.MoistureThreshold) && (self.weather.Rain <= self.config.RainLimit) {
+				watering = true
 
-			fmt.Println(self.weather.Rain)
+				//fmt.Println(self.weather.Rain)
 
-			fmt.Println("watering = true")
-		} else {
-			watering = false
-			self.config.MoistureThreshold = 0.5
-			fmt.Println("watering = false")
+				fmt.Println("watering = true")
+			} else {
+				watering = false
+				fmt.Println("watering = false")
 
-		}
-		if watering {
-			self.runPump(1)
+			}
+			if watering {
+				fmt.Println("pump running (routine)")
+				self.runPump(1)
 
+			}
 		}
 
 		time.Sleep(10 * time.Second)
