@@ -1,9 +1,12 @@
+//Http handlers for the user interface: "update" (submit button), manual watering "on" and "off", respectively, and "show"
+
 package hub
 
 import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 //handleUpdate will receive parameters from the browser, update the settings, and redirect to / (handleShow)
@@ -31,12 +34,12 @@ func (self *Hub) handleUpdate(w http.ResponseWriter, r *http.Request) {
 
 func (self *Hub) handleOn(w http.ResponseWriter, r *http.Request) {
 	//Do everything that needs to be done before the UI is refreshed again
-	self.config.ManualOn = true
+	self.config.ManualSetting = true
 	parsed, err := strconv.ParseInt(r.FormValue("minuteson"), 10, 64)
 	if err != nil {
 		panic(err)
 	}
-	self.config.MinutesOn = int(parsed)
+	self.config.ManualUntil = time.Now().Add(time.Minute * time.Duration(parsed))
 	self.saveSettings()
 	w.Header().Set("Location", "/")
 	w.WriteHeader(303)
@@ -46,12 +49,13 @@ func (self *Hub) handleOff(w http.ResponseWriter, r *http.Request) {
 	//Do everything that needs to be done before the UI is refreshed again
 	fmt.Println("offoff")
 	var err error
-	self.config.ManualOff = true
+	self.config.ManualSetting = false
 	parsed, err := strconv.ParseInt(r.FormValue("minutesoff"), 10, 64)
 	if err != nil {
 		panic(err)
 	}
-	self.config.MinutesOff = int(parsed)
+	//ManualUntil is set to make sure that automatic watering is not resumed until "minutesoff" minutes have passed
+	self.config.ManualUntil = time.Now().Add(time.Minute * time.Duration(parsed))
 	self.saveSettings()
 	w.Header().Set("Location", "/")
 	w.WriteHeader(303)
@@ -87,7 +91,7 @@ func (self *Hub) handleShow(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<input type='submit' value='Start now'>")
 	//MinutesOn         int
 	fmt.Fprintln(w, "Start watering immediately. Watering will stop after the number of minutes input in the box below. <br/>")
-	fmt.Fprintf(w, "Number of minutes: <input type='text' name='minuteson' value='%v'> <br/><br/>", self.config.MinutesOn)
+	fmt.Fprintf(w, "Number of minutes: <input type='text' name='minuteson' value='10'> <br/><br/>")
 	fmt.Fprintln(w, "</form>")
 
 	fmt.Fprintln(w, "<form action=/off>")
@@ -95,7 +99,7 @@ func (self *Hub) handleShow(w http.ResponseWriter, r *http.Request) {
 	//MinutesOff		int
 	fmt.Fprintln(w, "<input type='submit' value='Stop now'>")
 	fmt.Fprintln(w, "Pause watering immediately. Automatic watering will be resumed after the number of minutes input in the box below. <br/>")
-	fmt.Fprintf(w, "Number of minutes: <input type='text' name='minutesoff' value='%v'> <br/><br/>", self.config.MinutesOff)
+	fmt.Fprintf(w, "Number of minutes: <input type='text' name='minutesoff' value='10'> <br/><br/>")
 	fmt.Fprintln(w, "</form>")
 	//MinutesDaily		int
 	//fmt.Fprintln(w, "Complement the automatic watering scheme by watering %v minutes a day, at %v <br/>", self.config.MinutesDaily self.config.TimeDaily)

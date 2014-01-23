@@ -12,12 +12,13 @@ import (
 
 type Pi struct {
 	//
-	config        common.Configuration
-	weather       common.Weather
-	rain          float64
-	wateringTimer *time.Timer
-	pumpRunning   bool
-	timeStamp     time.Time
+	config  common.Configuration
+	weather common.Weather
+	//rain          float64
+	wateringTimer  *time.Timer
+	pumpRunning    bool
+	minutesWatered int
+	moisture       float64
 }
 
 func New() *Pi {
@@ -57,31 +58,30 @@ func (self *Pi) saveWeather() {
 		panic(err)
 	}
 }
+func init() {
+	//Use current time as seed so that random function is more random
+	rand.Seed(time.Now().UnixNano())
+}
 
 func (self *Pi) getMoisture() float64 {
 
 	moisture := rand.Float64()
+	self.moisture = moisture
 	return moisture
 }
 
 func (self *Pi) UpdateConfig(config common.Configuration) {
+	//Update config struct
 	self.config = config
 	//save new config to file
 	self.saveSettings()
-
-	if self.config.ManualOn {
-		self.config.ManualOn = false
-		self.config.ManualOff = false
-		self.timeStamp = time.Now()
-		fmt.Println("MinutesOn = ", self.config.MinutesOn)
-		self.runPump(self.config.MinutesOn)
-	}
-	if self.config.ManualOff {
-		self.config.ManualOn = false
-		self.config.ManualOff = false
-		self.timeStamp = time.Now()
-		fmt.Println("MinutesOff = ", self.config.MinutesOff)
-		self.stopPump(self.config.MinutesOff)
+	if time.Now().Before(self.config.ManualUntil) {
+		if self.config.ManualSetting {
+			self.runPump(self.config.ManualUntil)
+		} else {
+			self.stopPump()
+			fmt.Println("Pump stopped until ", self.config.ManualUntil)
+		}
 	}
 }
 
@@ -92,30 +92,28 @@ func (self *Pi) UpdateWeather(weather common.Weather) {
 	self.saveWeather()
 }
 
-func (self *Pi) runPump(minutes int) {
+func (self *Pi) runPump(until time.Time) {
 	//Start pump
 	if self.pumpRunning {
-		fmt.Println("Pump already running. New stop time in ", minutes, " minutes.")
+		fmt.Println("Pump already running. New stop time ", until.Format(time.Stamp))
 	} else {
-		fmt.Println("Pump starting. Stop time in ", minutes, " minutes.")
+		fmt.Println("Pump starting. Stop time  ", until.Format(time.Stamp))
 	}
 	self.pumpRunning = true
 	if self.wateringTimer != nil {
 		self.wateringTimer.Stop()
 	}
-	self.wateringTimer = time.AfterFunc(time.Duration(minutes)*time.Minute, func() { self.stopPump(0) })
-
+	self.wateringTimer = time.AfterFunc(until.Sub(time.Now()), func() { self.stopPump() })
 }
 
-func (self *Pi) stopPump(minutes int) {
+func (self *Pi) stopPump() {
 	//Stop pump, block watering for specified number of minutes
 	//Start watering/evaluation only if timer has run out or if "ManualOn" is pressed in the UI
-	self.config.ManualOn = false
 
 	if self.pumpRunning {
 		fmt.Println("Stopping pump")
+		self.pumpRunning = false
 	}
-	self.pumpRunning = false
 	if self.wateringTimer != nil {
 		self.wateringTimer.Stop()
 	}
@@ -123,12 +121,7 @@ func (self *Pi) stopPump(minutes int) {
 
 func (self *Pi) RoutineCheck() {
 	for {
-		timeSince := time.Now().Sub(self.timeStamp)
-		fmt.Println("timeSince = ", timeSince)
-		minOn := time.Minute * time.Duration(self.config.MinutesOn)
-		minOff := time.Minute * time.Duration(self.config.MinutesOff)
-		//Evaluate only if enough time has elapsed since last override order (self.timeStamp)
-		if timeSince > minOn && timeSince > minOff {
+		if time.Now().After(self.config.ManualUntil) {
 			var watering bool
 			//Soil moisture sensor reading
 			moisture := self.getMoisture()
@@ -146,7 +139,8 @@ func (self *Pi) RoutineCheck() {
 			}
 			if watering {
 				fmt.Println("pump running (routine)")
-				self.runPump(1)
+				self.minutesWatered += 1
+				self.runPump(time.Now().Add(time.Minute))
 
 			}
 		}
@@ -159,4 +153,5 @@ func (self *Pi) ConnectTo(hub common.Hub) {
 	//register self at hub
 	hub.Register(self)
 	go self.RoutineCheck()
+	go self.histToFile()
 }

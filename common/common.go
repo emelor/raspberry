@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 type Pi interface {
 	UpdateConfig(Configuration)
 	UpdateWeather(Weather)
@@ -16,7 +18,8 @@ type Hub interface {
 
 type Weather struct {
 	//rain during next 24 h
-	Rain float64
+	Rain    float64
+	RainNow float64
 	//max temp during next 24 h
 
 }
@@ -25,10 +28,8 @@ type Configuration struct {
 	MoistureThreshold float64
 	RainLimit         float64
 	WeatherUrl        string
-	ManualOn          bool
-	MinutesOn         int
-	ManualOff         bool
-	MinutesOff        int
+	ManualSetting     bool
+	ManualUntil       time.Time
 	//MinutesDaily		int
 	//TimeDaily
 }

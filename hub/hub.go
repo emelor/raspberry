@@ -12,9 +12,9 @@ import (
 )
 
 type Hub struct {
-	config        common.Configuration
-	weather       common.Weather
-	rain          float64
+	config  common.Configuration
+	weather common.Weather
+	//rain          float64
 	registeredPis []common.Pi
 }
 
@@ -102,6 +102,7 @@ func (self *Hub) checkWeather(checkedOnce chan bool) {
 			panic(err)
 		}
 		var rainTotal = 0.0
+		self.weather.RainNow = weatherData.Times[0].Precip.Value
 		for i := 0; i < 8; i++ {
 			rainMm := weatherData.Times[i].Precip.Value
 			rainTotal = rainTotal + rainMm
