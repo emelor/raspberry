@@ -10,6 +10,10 @@ import (
 	"../common"
 )
 
+//
+//never reads settings from file, so why save to file?
+//
+
 type Pi struct {
 	//
 	config  common.Configuration
@@ -19,10 +23,12 @@ type Pi struct {
 	pumpRunning    bool
 	minutesWatered int
 	moisture       float64
+	logPath        string
 }
 
 func New() *Pi {
-	return &Pi{}
+	//Default path for log files: current directory
+	return &Pi{logPath: "."}
 
 }
 func (self *Pi) saveSettings() {
@@ -140,6 +146,7 @@ func (self *Pi) RoutineCheck() {
 			if watering {
 				fmt.Println("pump running (routine)")
 				self.minutesWatered += 1
+				fmt.Println(self.minutesWatered)
 				self.runPump(time.Now().Add(time.Minute))
 
 			}
