@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"time"
+	"code.google.com/p/go.net/websocket"
 
 	"../common"
 )
@@ -26,11 +27,49 @@ type Pi struct {
 	logPath        string
 }
 
+type RemoteHub struct {
+	conn *websocket.Conn
+}
+
+func (self *RemoteHub) Register(p common.Pi) {
+	err := websocket.JSON.Send(self.conn, "register")
+	if err != nil {
+		panic(err)
+	}
+	for {
+		message := ""
+		err = websocket.JSON.Receive(self.conn, &message)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(message)
+	}
+}
+
 func New() *Pi {
 	//Default path for log files: current directory
 	return &Pi{logPath: "."}
 
 }
+func NewRemoteHub(address string) (hub *RemoteHub, err error) {
+	//
+	h, err := websocket.Dial(address, "", "http://localhost/")
+	if err != nil {
+		return
+	}
+	// *x (provided that x is a pointer, returns whatever x points to)
+	// &x (returns a pointer to x)
+	// Typ{} (returns new allocated variable of type Typ)
+	// &Typ{} (returns a pointer to (Typ{}))
+	// var x *Typ (x is a pointer to a variable of type Typ)
+	// var x Typ (x is a variable of type Typ)
+
+	hub = &RemoteHub{
+		conn: h,
+	}
+	return
+}
+
 func (self *Pi) saveSettings() {
 	f, err := os.Create("settings.json")
 	if err != nil {
@@ -81,6 +120,7 @@ func (self *Pi) UpdateConfig(config common.Configuration) {
 	self.config = config
 	//save new config to file
 	self.saveSettings()
+	//Manual watering or timed pause requested by user:
 	if time.Now().Before(self.config.ManualUntil) {
 		if self.config.ManualSetting {
 			self.runPump(self.config.ManualUntil)

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+"common"
+	"code.google.com/p/go.net/websocket"
 )
 
 //handleUpdate will receive parameters from the browser, update the settings, and redirect to / (handleShow)
@@ -143,14 +145,37 @@ type JsonDataSets struct {
 		},
 	]
 }
+fillColor : "rgba(220,220,220,0.5)",
+			strokeColor : "rgba(220,220,220,1)",
+			pointColor : "rgba(220,220,220,1)",
+			pointStrokeColor : "#fff",
 */
+
 func (self *Hub) getDataPoints() string {
 
 	dataSets := JsonDataSets{
 		Datasets: []JsonData{
-			JsonData{},
-			JsonData{},
-			JsonData{},
+			JsonData{
+				//rain
+				FillColor:        "rgba(255,170,255,0.5)",
+				StrokeColor:      "rgba(255,170,255,1)",
+				PointColor:       "rgba(255,170,255,1)",
+				PointStrokeColor: "#faf",
+			},
+			JsonData{
+				//moisture
+				FillColor:        "rgba(170,255,255,0.5)",
+				StrokeColor:      "rgba(170,255,255,1)",
+				PointColor:       "rgba(170,255,255,1)",
+				PointStrokeColor: "#aff",
+			},
+			JsonData{
+				//minutes
+				FillColor:        "rgba(255,255,170,0.5)",
+				StrokeColor:      "rgba(255,255,170,1)",
+				PointColor:       "rgba(255,255,170,1)",
+				PointStrokeColor: "#ffa",
+			},
 		},
 	}
 
@@ -171,11 +196,46 @@ func (self *Hub) getDataPoints() string {
 	return string(blabla)
 }
 
+func (self *Hub) handleWS(ws *websocket.Conn) {
+	for {
+		message := ""
+		err := websocket.JSON.Receive(ws, &message)
+		if err != nil {
+			panic(err)
+		}
+		if message == "register"{
+			self.Register(NewRemotePi(ws))
+			
+		}
+}
+type RemotePi struct{
+	
+}
+
+func NewRemotePi(){
+	
+}
+func (self *RemotePi) UpdateConfig(config common.Configuration){
+	
+}
+func (self *RemotePi) UpdateWeather(weather common.Weather){
+	
+}
+func (self *RemotePi) GetHistory(time.Time, time.Time)([]common.Data){
+	
+}
+
+func (self *Hub) GetWSAddress() (address string) {
+	address = "ws://127.0.0.1:25601/ws"
+	return
+}
+
 func (self *Hub) serve() {
 	http.HandleFunc("/update", http.HandlerFunc(self.handleUpdate))
 	http.HandleFunc("/on", http.HandlerFunc(self.handleOn))
 	http.HandleFunc("/off", http.HandlerFunc(self.handleOff))
 	http.HandleFunc("/", http.HandlerFunc(self.handleShow))
+	http.Handle("/ws", websocket.Handler(self.handleWS))
 	go func() {
 		if err := http.ListenAndServe(":25601", nil); err != nil {
 			panic(err)

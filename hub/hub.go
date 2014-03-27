@@ -102,11 +102,12 @@ func (self *Hub) checkWeather(checkedOnce chan bool) {
 			panic(err)
 		}
 		var rainTotal = 0.0
-		self.weather.RainNow = weatherData.Times[0].Precip.Value
+		//self.weather.RainNow = weatherData.Times[0].Precip.Value
 		for i := 0; i < 8; i++ {
-			rainMm := weatherData.Times[i].Precip.Value
-			rainTotal = rainTotal + rainMm
-			fmt.Println(rainMm)
+			self.weather.RainNow = weatherData.Times[i].Precip.Value
+
+			rainTotal = rainTotal + self.weather.RainNow
+			fmt.Println(self.weather.RainNow)
 			fmt.Println("Rain total: ")
 			fmt.Println(rainTotal)
 		}

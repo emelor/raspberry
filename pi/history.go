@@ -37,6 +37,7 @@ func (self *Pi) GetHistory(from, to time.Time) []common.Data {
 				//for matching files, go through and append structs to dataPoints
 				nameString := names[i]
 				file, err := os.Open(filepath.Join(self.logPath, nameString))
+				fmt.Println(nameString)
 				if err != nil {
 					panic(err)
 				}
