@@ -30,6 +30,7 @@ type Message struct {
 	ConfigBody   *Configuration
 	WeatherBody  *Weather
 	HistoryBody  *HistoryBody
+	Data         []Data
 	MessageID    int64
 }
 

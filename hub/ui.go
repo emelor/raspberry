@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"../common"
@@ -199,26 +200,66 @@ func (self *Hub) getDataPoints() string {
 }
 
 func (self *Hub) handleWS(ws *websocket.Conn) {
+	message := &common.Message{}
+	err := websocket.JSON.Receive(ws, message)
+	if err != nil {
+		panic(err)
+	}
+	//Unless the message is "register", disconnect
+	if message.FunctionName == "register" {
+		pi := NewRemotePi(ws)
+		self.Register(pi)
+		pi.Start()
+
+	}
+}
+func (self *RemotePi) Start() {
 	for {
 		message := &common.Message{}
-		err := websocket.JSON.Receive(ws, message)
+		err := websocket.JSON.Receive(self.ws, message)
 		if err != nil {
 			panic(err)
 		}
-		if message.FunctionName == "register" {
-			self.Register(NewRemotePi(ws))
-
-		}
+		self.HandleMessage(message)
 	}
+
+}
+func (self *RemotePi) HandleMessage(message *common.Message) {
+	self.lock.Lock()
+	defer self.lock.Unlock()
+	channel, found := self.awaitedIDs[message.MessageID]
+	if found {
+		channel <- message
+		delete(self.awaitedIDs, message.MessageID)
+	}
+}
+func (self *RemotePi) SendAndWait(message *common.Message) (channel chan *common.Message) {
+	//Second argument is buffer size (# of messages)
+	channel = make(chan *common.Message, 1)
+	self.lock.Lock()
+	self.awaitedIDs[message.MessageID] = channel
+	self.lock.Unlock()
+	err := websocket.JSON.Send(self.ws, message)
+	if err != nil {
+		panic(err)
+	}
+	return
 }
 
 type RemotePi struct {
 	ws *websocket.Conn
+	//create a MessageID-indexed hash map for channels, one channel per expected reply
+	awaitedIDs map[int64]chan *common.Message
+	//
+	lock *sync.Mutex
 }
 
 func NewRemotePi(ws *websocket.Conn) (pi *RemotePi) {
 	pi = &RemotePi{
 		ws: ws,
+		//Initialise lock and hash map
+		lock:       &sync.Mutex{},
+		awaitedIDs: map[int64]chan *common.Message{},
 	}
 	return
 }
@@ -248,11 +289,8 @@ func (self *RemotePi) GetHistory(from time.Time, to time.Time) []common.Data {
 			To:   to,
 		},
 	}
-	err := websocket.JSON.Send(self.ws, msg)
-	if err != nil {
-		panic(err)
-	}
-
+	reply := <-self.SendAndWait(msg)
+	return reply.Data
 }
 
 func (self *Hub) GetWSAddress() (address string) {
