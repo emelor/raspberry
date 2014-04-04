@@ -25,6 +25,18 @@ type Weather struct {
 	//max temp during next 24 h
 
 }
+type Message struct {
+	FunctionName string
+	ConfigBody   *Configuration
+	WeatherBody  *Weather
+	HistoryBody  *HistoryBody
+	MessageID    int64
+}
+
+type HistoryBody struct {
+	From time.Time
+	To   time.Time
+}
 
 type Configuration struct {
 	MoistureThreshold float64

@@ -5,10 +5,12 @@ package hub
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
-"common"
+
+	"../common"
 	"code.google.com/p/go.net/websocket"
 )
 
@@ -198,31 +200,59 @@ func (self *Hub) getDataPoints() string {
 
 func (self *Hub) handleWS(ws *websocket.Conn) {
 	for {
-		message := ""
-		err := websocket.JSON.Receive(ws, &message)
+		message := &common.Message{}
+		err := websocket.JSON.Receive(ws, message)
 		if err != nil {
 			panic(err)
 		}
-		if message == "register"{
+		if message.FunctionName == "register" {
 			self.Register(NewRemotePi(ws))
-			
+
 		}
-}
-type RemotePi struct{
-	
+	}
 }
 
-func NewRemotePi(){
-	
+type RemotePi struct {
+	ws *websocket.Conn
 }
-func (self *RemotePi) UpdateConfig(config common.Configuration){
-	
+
+func NewRemotePi(ws *websocket.Conn) (pi *RemotePi) {
+	pi = &RemotePi{
+		ws: ws,
+	}
+	return
 }
-func (self *RemotePi) UpdateWeather(weather common.Weather){
-	
+
+func (self *RemotePi) UpdateConfig(config common.Configuration) {
+	//send WS message containing string "UpdateConfig" and config struct
+	msg := &common.Message{
+		FunctionName: "UpdateConfig",
+		ConfigBody:   &config,
+	}
 }
-func (self *RemotePi) GetHistory(time.Time, time.Time)([]common.Data){
-	
+func (self *RemotePi) UpdateWeather(weather common.Weather) {
+	//send WS message containing string "UpdateWeather" and weather struct
+	msg := &common.Message{
+		FunctionName: "UpdateWeather",
+		WeatherBody:  &weather,
+	}
+}
+func (self *RemotePi) GetHistory(from time.Time, to time.Time) []common.Data {
+	//send WS message containing string "get history", from and to times
+	//Listen for reply
+	msg := &common.Message{
+		FunctionName: "GetHistory",
+		MessageID:    rand.Int63(),
+		HistoryBody: &common.HistoryBody{
+			From: from,
+			To:   to,
+		},
+	}
+	err := websocket.JSON.Send(self.ws, msg)
+	if err != nil {
+		panic(err)
+	}
+
 }
 
 func (self *Hub) GetWSAddress() (address string) {

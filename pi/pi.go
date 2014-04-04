@@ -42,6 +42,7 @@ func (self *RemoteHub) Register(p common.Pi) {
 		if err != nil {
 			panic(err)
 		}
+		if message == 
 		fmt.Println(message)
 	}
 }
