@@ -1,0 +1,73 @@
+//dot -Tsvg -oNodeProgram.svg NodeProgramFlowchart.dot
+
+digraph G {
+
+	// Action nodes
+	{
+		node[shape=octagon, style=filled, fillcolor="/orrd9/1:/orrd9/3", gradientangle=270];
+	
+
+
+
+	register [label="(self *RemoteHub) Register(p common.Pi)"];
+	
+	new [label="New() *Pi"];
+
+	newRemoteHub [label="NewRemoteHub(address) (hub, error)"];
+	
+	saveSettings [label="Pi.saveSettings()"];
+	
+	saveWeather [label="Pi.saveWeather()"];
+	
+	init [label="init()"];
+
+	getMoisture [label="Pi.getMoisture() (float)"];
+
+
+	updateConfig [label="Pi.UpdateConfig(configuration)"];
+
+	updateWeather [label="Pi.UpdateWeather(weather)"];
+
+
+	run [label="Pi.runPump(until)"];
+
+
+	stopPump [label="Pi.stopPump()"];
+
+
+	routineCheck [label="Pi.RoutineCheck()"];
+
+
+	connectTo [label="Pi.ConnectTo(hub)"];
+
+	getHistory [label="Pi.GetHistory(from, to) []common.Data"];
+	
+
+	fetchData [label="Pi.fetchData() common.Data"];
+
+	histToFile [label="Pi.histToFile()"];
+
+
+	
+	}
+
+	// Decision nodes
+	{
+		node[shape=diamond, style=filled, fillcolor="/rdpu9/1:/rdpu9/3", gradientangle=270];
+		
+	}
+
+	// Separate GO routines
+	{
+		node[shape=ellipse, style=filled, fillcolor="/blues9/1:/blues9/3", gradientangle=270]
+		“RoutineCheck”
+		“GetHistory”
+		“histToFile”
+	}
+	
+	// Flow chart graph data
+	
+	//“User logs in" -> "First log in?"
+	//“First log in?" -> "Display configuration GUI" [label="Yes"]
+	
+}

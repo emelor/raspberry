@@ -1,0 +1,43 @@
+//dot -Tsvg -ocontrol.svg controlFlowchart.dot
+digraph G {
+
+	// Action nodes
+	{
+		node[shape=octagon, style=filled, fillcolor="/orrd9/1:/orrd9/3", gradientangle=270];
+		"Sleep X seconds"
+		"Turn watering on \n for 60 seconds"
+		"Get moisture"
+	}
+
+	// Decision nodes
+	{
+		node[shape=diamond, style=filled, fillcolor="/rdpu9/1:/rdpu9/3", gradientangle=270];
+		"Is present time later than \n manual irrigation timestamp?"
+		"Is moisture < moisture threshold \n AND \n is rain forecast =< rain threshold?"
+	}
+
+	// Event nodes
+	{
+		node[shape=ellipse, style=filled, fillcolor="/gnbu9/1:/gnbu9/3", gradientangle=270]
+		"Enter loop: pi.RoutineCheck"
+		"Manual watering has already been \n carried out by pi.UpdateConfig loop"
+	}
+	
+	// Flow chart graph data
+	START -> "Enter loop: pi.RoutineCheck"
+	"Enter loop: pi.RoutineCheck" -> "Is present time later than \n manual irrigation timestamp?"
+	"Is present time later than \n manual irrigation timestamp?" -> "Get moisture" [label="Yes"]
+	"Get moisture" -> "Is moisture < moisture threshold \n AND \n is rain forecast =< rain threshold?"
+	"Is moisture < moisture threshold \n AND \n is rain forecast =< rain threshold?" -> "Sleep X seconds" [label="No"]
+	"Is moisture < moisture threshold \n AND \n is rain forecast =< rain threshold?" -> "Turn watering on \n for 60 seconds" [label="Yes"]
+	"Turn watering on \n for 60 seconds" -> "Sleep X seconds"
+ 	"Is present time later than \n manual irrigation timestamp?" -> "Manual watering has already been \n carried out by pi.UpdateConfig loop" [label="No"]
+	"Manual watering has already been \n carried out by pi.UpdateConfig loop" -> "Sleep X seconds"
+	"Sleep X seconds" -> "Is present time later than \n manual irrigation timestamp?"
+
+
+
+
+
+
+}

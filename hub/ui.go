@@ -208,6 +208,7 @@ func (self *Hub) handleWS(ws *websocket.Conn) {
 	//Unless the message is "register", disconnect
 	if message.FunctionName == "register" {
 		pi := NewRemotePi(ws)
+		fmt.Println("Register new Pi!")
 		self.Register(pi)
 		pi.Start()
 
@@ -250,7 +251,7 @@ type RemotePi struct {
 	ws *websocket.Conn
 	//create a MessageID-indexed hash map for channels, one channel per expected reply
 	awaitedIDs map[int64]chan *common.Message
-	//
+	//Lock is used whenever inserting or removing an entry in awaitedIDs
 	lock *sync.Mutex
 }
 
@@ -270,6 +271,10 @@ func (self *RemotePi) UpdateConfig(config common.Configuration) {
 		FunctionName: "UpdateConfig",
 		ConfigBody:   &config,
 	}
+	err := websocket.JSON.Send(self.ws, msg)
+	if err != nil {
+		panic(err)
+	}
 }
 func (self *RemotePi) UpdateWeather(weather common.Weather) {
 	//send WS message containing string "UpdateWeather" and weather struct
@@ -277,8 +282,12 @@ func (self *RemotePi) UpdateWeather(weather common.Weather) {
 		FunctionName: "UpdateWeather",
 		WeatherBody:  &weather,
 	}
+	err := websocket.JSON.Send(self.ws, msg)
+	if err != nil {
+		panic(err)
+	}
 }
-func (self *RemotePi) GetHistory(from time.Time, to time.Time) []common.Data {
+func (self *RemotePi) GetHistory(from, to time.Time) []common.Data {
 	//send WS message containing string "get history", from and to times
 	//Listen for reply
 	msg := &common.Message{
@@ -290,6 +299,7 @@ func (self *RemotePi) GetHistory(from time.Time, to time.Time) []common.Data {
 		},
 	}
 	reply := <-self.SendAndWait(msg)
+	fmt.Println("reply.Data: ", reply.Data)
 	return reply.Data
 }
 

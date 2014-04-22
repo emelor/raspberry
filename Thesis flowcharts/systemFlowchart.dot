@@ -1,0 +1,49 @@
+//dot -Tsvg -osystem.svg systemFlowchart.dot
+
+digraph G {
+
+	// Event nodes
+	{
+		node[shape=ellipse, style=filled, fillcolor="/gnbu9/1:/gnbu9/3", gradientangle=270]
+		"User"
+		"Web interface"
+		"Server"
+		"Weather API"
+		"Node"
+		"Actuator(s)"
+		"Sensor(s)"
+	}
+	
+	// Other nodes
+	{
+		node[shape=plaintext, style=none, fillcolor="/rdpu9/1:/rdpu9/3", gradientangle=270];
+		
+	}
+	
+	// Flow chart graph data
+
+		"User" -> "Web interface"
+		"Web interface" -> "User"
+		"Server" -> "Web interface"
+		"Web interface" -> "Server"
+		"Weather API" -> "Server"
+		"Server" -> "Weather API"
+		"Server" -> "Node"
+		"Node" -> "Server"
+		"Actuator(s)" -> "Node"
+		"Sensor(s)" -> "Node"
+		"Node" -> "Actuator(s)"
+		"Node" -> "Sensor(s)"
+		
+
+//	START -> "Is controller configured?"
+//	"Is controller configured?" -> "Adjust actuator output" [label="Yes"]
+//	"Is controller configured?" -> "Set new controller" [label="No"]
+
+//	"New weather data" -> "Adjust actuator output"
+//	"New sensor data" -> "Adjust actuator output"
+//	"Adjust actuator output" -> "New sensor data" [color="grey"]
+	
+//	"New controller configuration requested" -> "Set new controller"
+//	"Set new controller" -> "Adjust actuator output"
+}

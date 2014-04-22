@@ -1,0 +1,46 @@
+//dot -Tsvg -oHubProgram.svg HubProgramFlowchart.dot
+
+digraph G {
+
+	// Action nodes
+	{
+		node[shape=octagon, style=filled, fillcolor="/orrd9/1:/orrd9/3", gradientangle=270];
+		"Display configuration GUI"
+		"Set configuration"
+		"Display information GUI"
+		"Adjust control"
+		"Update information GUI"
+	}
+
+	// Decision nodes
+	{
+		node[shape=diamond, style=filled, fillcolor="/rdpu9/1:/rdpu9/3", gradientangle=270];
+		"First log in?"
+	}
+
+	// User event nodes
+	{
+		node[shape=ellipse, style=filled, fillcolor="/blues9/1:/blues9/3", gradientangle=270]
+		"User logs in"
+		"User logs out"
+		"User wishes to change configuration"
+		"User confirms configuration"
+	}
+	
+	// Flow chart graph data
+	"User logs in" -> "First log in?"
+	"First log in?" -> "Display configuration GUI" [label="Yes"]
+	"First log in?" -> "Display information GUI" [label="No"]
+	
+	"Display configuration GUI" -> "User confirms configuration"
+	"User confirms configuration" -> "Set configuration" 
+	"Set configuration" -> "Adjust control"
+
+	"Adjust control" -> "Update information GUI"
+	"Update information GUI" -> "Display information GUI"
+	
+	"User wishes to change configuration" -> "Display configuration GUI"
+
+	"Display information GUI" -> "User wishes to change configuration"
+	"Display information GUI" -> "User logs out"
+}

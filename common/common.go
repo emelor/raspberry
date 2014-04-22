@@ -6,25 +6,19 @@ type Pi interface {
 	UpdateConfig(Configuration)
 	UpdateWeather(Weather)
 	GetHistory(time.Time, time.Time) []Data
-	//status update
-	//data update
 }
 
 type Hub interface {
 	Register(Pi)
-	//UpdateHistory(History)
-
-	//show webpage
-
 }
 
 type Weather struct {
 	//rain during next 24 h
-	Rain    float64
+	Rain float64
+	//rain during next 3 hours (time resolution of yr.no weather data)
 	RainNow float64
-	//max temp during next 24 h
-
 }
+
 type Message struct {
 	FunctionName string
 	ConfigBody   *Configuration

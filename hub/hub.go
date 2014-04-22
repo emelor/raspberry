@@ -41,6 +41,7 @@ func New() (hubInstance *Hub) {
 	hubInstance.DefaultSettings()
 	checkedOnce := make(chan bool)
 	go hubInstance.checkWeather(checkedOnce)
+	//Wait until weather report has been fetched from yr.no before starting server
 	<-checkedOnce
 	hubInstance.serve()
 
@@ -90,7 +91,6 @@ func (self *Hub) transferWeather() {
 
 func (self *Hub) checkWeather(checkedOnce chan bool) {
 	//check periodically
-	//don't check if fresh timestamp?
 	for {
 		client := new(http.Client)
 		resp, err := client.Get(self.config.WeatherUrl)

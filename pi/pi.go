@@ -12,7 +12,7 @@ import (
 )
 
 //
-//never reads settings from file, so why save to file?
+//never reads settings from file
 //
 
 type Pi struct {
@@ -32,19 +32,35 @@ type RemoteHub struct {
 }
 
 func (self *RemoteHub) Register(p common.Pi) {
-	err := websocket.JSON.Send(self.conn, "register")
+	message := &common.Message{
+		FunctionName: "register",
+	}
+	err := websocket.JSON.Send(self.conn, message)
 	if err != nil {
 		panic(err)
 	}
-	for {
-		message := ""
-		err = websocket.JSON.Receive(self.conn, &message)
-		if err != nil {
-			panic(err)
+	go func() {
+		for {
+			message := &common.Message{}
+			err = websocket.JSON.Receive(self.conn, &message)
+			if err != nil {
+				panic(err)
+			}
+			if message.FunctionName == "GetHistory" {
+				message.Data = p.GetHistory(message.HistoryBody.From, message.HistoryBody.To)
+				err = websocket.JSON.Send(self.conn, &message)
+				if err != nil {
+					panic(err)
+				}
+			}
+			if message.FunctionName == "UpdateConfig" {
+				p.UpdateConfig(*message.ConfigBody)
+			}
+			if message.FunctionName == "UpdateWeather" {
+				p.UpdateWeather(*message.WeatherBody)
+			}
 		}
-		if message == 
-		fmt.Println(message)
-	}
+	}()
 }
 
 func New() *Pi {
@@ -110,7 +126,6 @@ func init() {
 }
 
 func (self *Pi) getMoisture() float64 {
-
 	moisture := rand.Float64()
 	self.moisture = moisture
 	return moisture
@@ -198,8 +213,10 @@ func (self *Pi) RoutineCheck() {
 }
 
 func (self *Pi) ConnectTo(hub common.Hub) {
+	fmt.Println("ConnectTo(hub)!")
 	//register self at hub
 	hub.Register(self)
+	fmt.Println("hub.register")
 	go self.RoutineCheck()
 	go self.histToFile()
 }

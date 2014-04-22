@@ -16,6 +16,7 @@ import (
 )
 
 func (self *Pi) GetHistory(from, to time.Time) []common.Data {
+	fmt.Println("in history.go GetHistory()")
 	dataPoints := []common.Data{}
 	//open current directory
 	dir, err := os.Open(self.logPath)
@@ -24,6 +25,7 @@ func (self *Pi) GetHistory(from, to time.Time) []common.Data {
 	}
 	//Get file names in slice
 	names, err := dir.Readdirnames(-1)
+	fmt.Println("names in directory", names)
 	if err != nil {
 		panic(err)
 	}
@@ -51,6 +53,7 @@ func (self *Pi) GetHistory(from, to time.Time) []common.Data {
 						break
 					}
 					dataPoints = append(dataPoints, newDataPoint)
+					fmt.Println(dataPoints)
 
 				}
 			}
@@ -63,6 +66,7 @@ func (self *Pi) GetHistory(from, to time.Time) []common.Data {
 }
 
 func (self *Pi) fetchData() common.Data {
+	fmt.Println("fetchData!")
 	var d common.Data
 	d.Rain = self.weather.RainNow
 	d.Minutes = self.minutesWatered
@@ -73,14 +77,15 @@ func (self *Pi) fetchData() common.Data {
 }
 
 func (self *Pi) histToFile() {
+	fmt.Println("histToFile!")
 	for {
 		d := self.fetchData()
 		year, month, day := time.Now().Date()
 		filename := fmt.Sprintf("%v%v%v.json", year, month, day)
 		//Open file by 'filename' in append mode. If no such file  exists, create it first.
 		//0666 means that file will be created readable and writeable by all
-		file, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 		//file, err := os.Create(filename)
+		file, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 		if err != nil {
 			panic(err)
 		}
