@@ -11,7 +11,7 @@ digraph G {
 
 	register [label="(self *RemoteHub) Register(p common.Pi)"];
 	
-	new [label="New() *Pi"];
+	newPi [label="New() *Pi"];
 
 	newRemoteHub [label="NewRemoteHub(address) (hub, error)"];
 	
@@ -23,49 +23,64 @@ digraph G {
 
 	getMoisture [label="Pi.getMoisture() (float)"];
 
-
-	updateConfig [label="Pi.UpdateConfig(configuration)"];
-
-	updateWeather [label="Pi.UpdateWeather(weather)"];
-
-
 	run [label="Pi.runPump(until)"];
 
-
-	stopPump [label="Pi.stopPump()"];
-
+	stop [label="Pi.stopPump()"];
 
 	routineCheck [label="Pi.RoutineCheck()"];
 
-
 	connectTo [label="Pi.ConnectTo(hub)"];
-
-	getHistory [label="Pi.GetHistory(from, to) []common.Data"];
-	
 
 	fetchData [label="Pi.fetchData() common.Data"];
 
-	histToFile [label="Pi.histToFile()"];
-
-
-	
 	}
 
-	// Decision nodes
+	// Other nodes
 	{
-		node[shape=diamond, style=filled, fillcolor="/rdpu9/1:/rdpu9/3", gradientangle=270];
+		node[shape=square, style=filled, fillcolor="/rdpu9/1:/rdpu9/3", gradientangle=270];
 		
+		"LOG \n FILE"
+		"Websocket connection"
 	}
 
 	// Separate GO routines
 	{
 		node[shape=ellipse, style=filled, fillcolor="/blues9/1:/blues9/3", gradientangle=270]
-		“RoutineCheck”
-		“GetHistory”
-		“histToFile”
+		
+		getHistory [label="Pi.GetHistory(from, to) []common.Data"];
+		routineCheck [label="Pi.RoutineCheck()"];
+		histToFile [label="Pi.histToFile()"];
+		updateConfig [label="Pi.UpdateConfig(configuration)"];
+		updateWeather [label="Pi.UpdateWeather(weather)"];
+		
 	}
 	
 	// Flow chart graph data
+	"newPi" -> "newRemoteHub"
+	"newRemoteHub" -> "connectTo"
+	"connectTo" -> "register"
+	"connectTo" -> "routineCheck"
+	"connectTo" -> "histToFile"
+	"histToFile" -> "fetchData"
+	"histToFile" -> "LOG \n FILE"
+	"LOG \n FILE" -> "getHistory"
+	"getHistory" -> "LOG \n FILE"
+	"register" -> "getHistory"
+	"getHistory" -> "register"
+	"register" -> "Websocket connection"
+	"Websocket connection" -> "register"
+	"histToFile" -> "fetchData"
+	"fetchData" -> "histToFile"
+	"routineCheck" -> "run"
+	"run" -> "stop"
+	"routineCheck" -> "routineCheck"
+	"routineCheck" -> "getMoisture"
+	"getMoisture" -> "routineCheck"
+	"register" -> "updateConfig"
+	"register" -> "updateWeather"
+	"updateConfig" -> "saveSettings"
+	"updateWeather" -> "saveWeather"
+	
 	
 	//“User logs in" -> "First log in?"
 	//“First log in?" -> "Display configuration GUI" [label="Yes"]
