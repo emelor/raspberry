@@ -9,7 +9,7 @@ digraph G {
 
 
 
-	register [label="(self *RemoteHub) Register(p common.Pi)"];
+	register [label="Hub.Register(p common.Pi)"];
 	
 	newPi [label="New() *Pi"];
 
@@ -32,6 +32,12 @@ digraph G {
 	connectTo [label="Pi.ConnectTo(hub)"];
 
 	fetchData [label="Pi.fetchData() common.Data"];
+	
+	updateConfig [label="Pi.UpdateConfig(configuration)"];
+			
+	updateWeather [label="Pi.UpdateWeather(weather)"];
+		
+	getHistory [label="Pi.GetHistory(from, to) []common.Data"];
 
 	}
 
@@ -40,35 +46,35 @@ digraph G {
 		node[shape=square, style=filled, fillcolor="/rdpu9/1:/rdpu9/3", gradientangle=270];
 		
 		"LOG \n FILE"
-		"Websocket connection"
+		"Websocket \n connection"
 	}
 
 	// Separate GO routines
 	{
 		node[shape=ellipse, style=filled, fillcolor="/blues9/1:/blues9/3", gradientangle=270]
 		
-		getHistory [label="Pi.GetHistory(from, to) []common.Data"];
 		routineCheck [label="Pi.RoutineCheck()"];
 		histToFile [label="Pi.histToFile()"];
-		updateConfig [label="Pi.UpdateConfig(configuration)"];
-		updateWeather [label="Pi.UpdateWeather(weather)"];
+		"Listen for messages"
+
 		
 	}
 	
 	// Flow chart graph data
 	"newPi" -> "newRemoteHub"
+	"newPi" -> "init"
+	"register" -> "Listen for messages"
 	"newRemoteHub" -> "connectTo"
 	"connectTo" -> "register"
 	"connectTo" -> "routineCheck"
 	"connectTo" -> "histToFile"
-	"histToFile" -> "fetchData"
 	"histToFile" -> "LOG \n FILE"
 	"LOG \n FILE" -> "getHistory"
 	"getHistory" -> "LOG \n FILE"
-	"register" -> "getHistory"
+	"Listen for messages" -> "getHistory"
 	"getHistory" -> "register"
-	"register" -> "Websocket connection"
-	"Websocket connection" -> "register"
+	"register" -> "Websocket \n connection"
+	"Websocket \n connection" -> "register"
 	"histToFile" -> "fetchData"
 	"fetchData" -> "histToFile"
 	"routineCheck" -> "run"
@@ -76,8 +82,8 @@ digraph G {
 	"routineCheck" -> "routineCheck"
 	"routineCheck" -> "getMoisture"
 	"getMoisture" -> "routineCheck"
-	"register" -> "updateConfig"
-	"register" -> "updateWeather"
+	"Listen for messages" -> "updateConfig"
+	"Listen for messages" -> "updateWeather"
 	"updateConfig" -> "saveSettings"
 	"updateWeather" -> "saveWeather"
 	

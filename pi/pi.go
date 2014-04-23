@@ -12,7 +12,7 @@ import (
 )
 
 //
-//never reads settings from file
+//never reads settings or weather from file!
 //
 
 type Pi struct {
@@ -65,6 +65,7 @@ func (self *RemoteHub) Register(p common.Pi) {
 
 func New() *Pi {
 	//Default path for log files: current directory
+	init()
 	return &Pi{logPath: "."}
 
 }
