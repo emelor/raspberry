@@ -1,46 +1,110 @@
-//dot -Tsvg -oHubProgram.svg HubProgramFlowchart.dot
+//neato -Tsvg -oHubProgram.svg HubProgramFlowchart.dot && open HubProgram.svg
 
 digraph G {
 
 	// Action nodes
 	{
 		node[shape=octagon, style=filled, fillcolor="/orrd9/1:/orrd9/3", gradientangle=270];
-		"Display configuration GUI"
-		"Set configuration"
-		"Display information GUI"
-		"Adjust control"
-		"Update information GUI"
+	
+
+	
+	newHub [label="NewPi"];
+
+	newRemotePi [label="NewRemoteHub"];
+	
+	saveSettings [label="Pi.saveSettings"];
+	
+	transferSettings [label="Pi.saveSettings"];
+	
+	registerPi [label="Pi.getMoisture"];
+	
+	updateConfig [label="Pi.UpdateConfig"];
+			
+	updateWeather [label="Pi.UpdateWeather"];
+	
+	transferWeather [label="Pi.runPump"];
+
+	loadDefault [label="Pi.stopPump"];
+	
+	startPi [label="Pi.ConnectTo"];
+	
+	handleMessage [label="Pi.fetchData"];
+		
+	getHistory [label="Pi.GetHistory"];
+	
+	getDataPoints [label="Pi.GetHistory"];
+	
+	sendAndWait [label="Pi.GetHistory"];
+	
+	serve [label="Pi.GetHistory"];
+	
+	handleWS [label="Pi.GetHistory"];
+	
+	handleShow [label="Pi.GetHistory"];
+	
+	handleOn [label="Pi.GetHistory"];
+	
+	handleOff [label="Pi.GetHistory"];
 	}
 
-	// Decision nodes
+	// Other nodes
 	{
-		node[shape=diamond, style=filled, fillcolor="/rdpu9/1:/rdpu9/3", gradientangle=270];
-		"First log in?"
+		node[shape=note, style=filled, fillcolor="", gradientangle=270];
+		
+		"LOG \n FILE"
+		
+	}
+	
+	{
+		node[shape=doublecircle, style=filled, fillcolor="/rdpu9/1:/rdpu9/3", gradientangle=270];
+		
+	"Websocket \n connection"
 	}
 
-	// User event nodes
+	// Separate GO routines
 	{
 		node[shape=ellipse, style=filled, fillcolor="/blues9/1:/blues9/3", gradientangle=270]
-		"User logs in"
-		"User logs out"
-		"User wishes to change configuration"
-		"User confirms configuration"
+		
+		checkWeather [label="Pi.saveWeather"];
+		listenAndServe [label="Pi.histToFile"];
+		
+
+		
 	}
 	
 	// Flow chart graph data
-	"User logs in" -> "First log in?"
-	"First log in?" -> "Display configuration GUI" [label="Yes"]
-	"First log in?" -> "Display information GUI" [label="No"]
+	overlap=false;
+	splines=true;
+	START -> "newPi"
+	"newPi" -> "newRemoteHub" [label="Address"]
+	"newPi" -> "init"
+	"register" -> "Message handling" 
+	"newRemoteHub" -> "connectTo" [label="Hub"]
+	"newRemoteHub" -> "newPi" [label="Hub" ]
+	"connectTo" -> "register" [label="Pi"]
+	"connectTo" -> "routineCheck" 
+	"connectTo" -> "histToFile" 
+	"histToFile" -> "LOG \n FILE" 
+	"LOG \n FILE" -> "getHistory" 
+	"getHistory" -> "LOG \n FILE" 
+	"Message handling" -> "getHistory" [label="from:, to:" ]
+	"getHistory" -> "register" 
+	"Message handling" -> "Websocket \n connection" 
+	"Websocket \n connection" -> "Message handling" 
+	"histToFile" -> "fetchData" 
+	"fetchData" -> "histToFile" [label = "Data"]
+	"updateConfig" -> "run" [label="until"]
+	"run" -> "stop"
+	"routineCheck" -> "routineCheck" 
+	"routineCheck" -> "getMoisture"
+	"getMoisture" -> "routineCheck" [label="Moisture"]
+	"Message handling" -> "updateConfig" [label="Settings"]
+	"Message handling" -> "updateWeather" [label="Weather"]
+	"updateConfig" -> "saveSettings" 
+	"updateWeather" -> "saveWeather" 
 	
-	"Display configuration GUI" -> "User confirms configuration"
-	"User confirms configuration" -> "Set configuration" 
-	"Set configuration" -> "Adjust control"
-
-	"Adjust control" -> "Update information GUI"
-	"Update information GUI" -> "Display information GUI"
 	
-	"User wishes to change configuration" -> "Display configuration GUI"
-
-	"Display information GUI" -> "User wishes to change configuration"
-	"Display information GUI" -> "User logs out"
+	//“User logs in" -> "First log in?"
+	//“First log in?" -> "Display configuration GUI" [label="Yes"]
+	
 }

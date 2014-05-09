@@ -1,4 +1,4 @@
-//dot -Tsvg -oNodeProgram.svg NodeProgramFlowchart.dot
+//neato -Tsvg -oNodeProgram.svg NodeProgramFlowchart.dot && open NodeProgram.svg
 
 digraph G {
 
@@ -9,83 +9,93 @@ digraph G {
 
 
 
-	register [label="Hub.Register(p common.Pi)"];
+	register [label="Hub.Register"];
 	
-	newPi [label="New() *Pi"];
+	newPi [label="NewPi"];
 
-	newRemoteHub [label="NewRemoteHub(address) (hub, error)"];
+	newRemoteHub [label="NewRemoteHub"];
 	
-	saveSettings [label="Pi.saveSettings()"];
+	saveSettings [label="Pi.saveSettings"];
 	
-	saveWeather [label="Pi.saveWeather()"];
+	saveWeather [label="Pi.saveWeather"];
 	
-	init [label="init()"];
+	init [label="init"];
 
-	getMoisture [label="Pi.getMoisture() (float)"];
+	getMoisture [label="Pi.getMoisture"];
 
-	run [label="Pi.runPump(until)"];
+	run [label="Pi.runPump"];
 
-	stop [label="Pi.stopPump()"];
+	stop [label="Pi.stopPump"];
 
-	routineCheck [label="Pi.RoutineCheck()"];
+	routineCheck [label="Pi.RoutineCheck"];
 
-	connectTo [label="Pi.ConnectTo(hub)"];
+	connectTo [label="Pi.ConnectTo"];
 
-	fetchData [label="Pi.fetchData() common.Data"];
+	fetchData [label="Pi.fetchData"];
 	
-	updateConfig [label="Pi.UpdateConfig(configuration)"];
+	updateConfig [label="Pi.UpdateConfig"];
 			
-	updateWeather [label="Pi.UpdateWeather(weather)"];
+	updateWeather [label="Pi.UpdateWeather"];
 		
-	getHistory [label="Pi.GetHistory(from, to) []common.Data"];
+	getHistory [label="Pi.GetHistory"];
 
 	}
 
 	// Other nodes
 	{
-		node[shape=square, style=filled, fillcolor="/rdpu9/1:/rdpu9/3", gradientangle=270];
+		node[shape=note, style=filled, fillcolor="", gradientangle=270];
 		
 		"LOG \n FILE"
-		"Websocket \n connection"
+		
+	}
+	
+	{
+		node[shape=doublecircle, style=filled, fillcolor="/rdpu9/1:/rdpu9/3", gradientangle=270];
+		
+	"Websocket \n connection"
 	}
 
 	// Separate GO routines
 	{
 		node[shape=ellipse, style=filled, fillcolor="/blues9/1:/blues9/3", gradientangle=270]
 		
-		routineCheck [label="Pi.RoutineCheck()"];
-		histToFile [label="Pi.histToFile()"];
-		"Listen for messages"
+		routineCheck [label="Pi.RoutineCheck"];
+		histToFile [label="Pi.histToFile"];
+		"Message handling"
 
 		
 	}
 	
 	// Flow chart graph data
-	"newPi" -> "newRemoteHub"
+	overlap=false;
+	splines=true;
+	START -> "newPi"
+	"newPi" -> "newRemoteHub" [label="Address"]
 	"newPi" -> "init"
-	"register" -> "Listen for messages"
-	"newRemoteHub" -> "connectTo"
-	"connectTo" -> "register"
-	"connectTo" -> "routineCheck"
-	"connectTo" -> "histToFile"
-	"histToFile" -> "LOG \n FILE"
-	"LOG \n FILE" -> "getHistory"
-	"getHistory" -> "LOG \n FILE"
-	"Listen for messages" -> "getHistory"
-	"getHistory" -> "register"
-	"register" -> "Websocket \n connection"
-	"Websocket \n connection" -> "register"
-	"histToFile" -> "fetchData"
-	"fetchData" -> "histToFile"
-	"routineCheck" -> "run"
+	"register" -> "Message handling" 
+	"newRemoteHub" -> "connectTo" [label="Hub"]
+	"newRemoteHub" -> "newPi" [label="Hub" ]
+	"connectTo" -> "register" [label="Pi"]
+	"connectTo" -> "routineCheck" 
+	"connectTo" -> "histToFile" 
+	"histToFile" -> "LOG \n FILE" 
+	"LOG \n FILE" -> "getHistory" 
+	"getHistory" -> "LOG \n FILE" 
+	"Message handling" -> "getHistory" [label="from:, to:" ]
+	"getHistory" -> "register" 
+	"Message handling" -> "Websocket \n connection" 
+	"Websocket \n connection" -> "Message handling" 
+	"histToFile" -> "fetchData" 
+	"fetchData" -> "histToFile" [label = "Data"]
+	"updateConfig" -> "run" [label="until"]
 	"run" -> "stop"
-	"routineCheck" -> "routineCheck"
+	"routineCheck" -> "routineCheck" 
 	"routineCheck" -> "getMoisture"
-	"getMoisture" -> "routineCheck"
-	"Listen for messages" -> "updateConfig"
-	"Listen for messages" -> "updateWeather"
-	"updateConfig" -> "saveSettings"
-	"updateWeather" -> "saveWeather"
+	"getMoisture" -> "routineCheck" [label="Moisture"]
+	"Message handling" -> "updateConfig" [label="Settings"]
+	"Message handling" -> "updateWeather" [label="Weather"]
+	"updateConfig" -> "saveSettings" 
+	"updateWeather" -> "saveWeather" 
 	
 	
 	//“User logs in" -> "First log in?"
